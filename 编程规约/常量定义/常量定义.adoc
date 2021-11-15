@@ -1,0 +1,54 @@
+= 常量定义
+
+. 【强制】不允许任何魔法值（即未经预先定义的常量）直接出现在代码中。
++
++++<font color="#FF4500">+++反例：+++</font>+++
++
+String key = +++<font color="#0033CC">+++"Id#taobao_"+++</font>+++ + tradeId； +
+cache.put(key, value); +
++
+本例中同学A定义了缓存的key，然后同学B使用缓存时少了下划线，即key是"Id#taobao"+tradeId，导致故障。
+
+. 【强制】在 long 或者 Long 赋值时，数值后使用大写的 L，不能是小写的 l，小写容易跟数字混淆，造成误解。
++
++++<font color="#977C00">+++说明：+++</font>+++ Long a = 2l; 写的是数字的21，还是Long型的2?
+
+. 【推荐】不要使用一个常量类维护所有常量，要按常量功能进行归类，分开维护。
++
++++<font color="#019858">+++正例：+++</font>+++
+缓存相关的常量放在类CacheConsts下；系统配置相关的常量放在类SystemConfigConsts下。
++
++++<font color="#977C00">+++说明：+++</font>+++
+大而全的常量类，杂乱无章，使用查找功能才能定位到修改的常量，不利于理解，也不利于维护。
+
+. 【推荐】常量的复用层次有五层：跨应用共享常量、应用内共享常量、子工程内共享常量、包内共享常量、类内共享常量。 +
+&emsp;1） 跨应用共享常量：放置在二方库中，通常是client.jar中的constant目录下。 +
+&emsp;2） 应用内共享常量：放置在一方库子模块中的constant目录下。 +
+&emsp;&emsp;&emsp;&emsp;+++<font color="#FF4500">+++反例：+++</font>+++易懂变量也要统一定义成应用内共享常量，两位攻城师在两个类中分别定义了表示"`是`"的变量： +
+&emsp;&emsp;&emsp;&emsp;类A中：public static final String YES = "yes"; +
+&emsp;&emsp;&emsp;&emsp;类B中：public static final String YES = "y"; +
+&emsp;&emsp;&emsp;&emsp;A.YES.equals(B.YES)，预期是true，但实际返回为false，导致产生线上问题。 +
+&emsp;3） 子工程内部共享常量：即在当前子工程的constant目录下。 +
+&emsp;4） 包内共享常量：即在当前包下单独的constant目录下。 +
+&emsp;5） 类内共享常量：直接在类内部private static final定义。
+. 【推荐】如果变量值仅在一个固定范围内变化用enum类型来定义。
++
++++<font color="#977C00">+++说明：+++</font>+++如果存在名称之外的延伸属性应使用enum类型，下面正例中的数字就是延伸信息，表示一年中的第几个季节。
++
++++<font color="#019858">+++正例：+++</font>+++
++
+[,java]
+----
+    public enum SeasonEnum {
+            SPRING(1), SUMMER(2), AUTUMN(3), WINTER(4);
+
+            private int seq;
+            SeasonEnum(int seq) {
+                this.seq = seq;
+            }
+
+            public int getSeq() {
+                return seq;
+            }
+    }
+----
