@@ -1,0 +1,235 @@
+=== +++<font color="green">+++OOP规约：+++</font>+++
+
+. 【强制】避免通过一个类的对象引用访问此类的静态变量或静态方法，无谓增加编译器解析成本，直接用+++<font color="#0033CC">+++类名+++</font>+++来访问即可。
+. 【强制】所有的覆写方法，必须加@Override注解。
++
++++<font color="#977C00">+++说明：+++</font>+++getObject()与get0bject()的问题。一个是字母的O，一个是数字的0，加@Override可以准确判断是否覆盖成功。另外，如果在抽象类中对方法签名进行修改，其实现类会马上编译报错。
+
+. 【强制】相同参数类型，相同业务含义，才可以使用Java的可变参数，避免使用Object。+++<font color="#977C00">
++
++++说明：+++</font>+++可变参数必须放置在参数列表的最后。（提倡同学们尽量不用可变参数编程）
++
++++<font color="#019858">+++正例：+++</font>+++
++
+[,java]
+----
+    public List<User> listUsers(String type, Long... ids) {
+        ...
+    }
+----
+
+. 【强制】外部正在调用或者二方库赖的接口，不允许修改+++<font color="#0033CC">+++方法签名+++</font>+++，避免对接口调用方产生影响。接口过时必须加@Deprecated注解，并清晰地说明采用的新接口或者新服务是什么。
+. 【强制】不能使用过时的类或方法。
++
++++<font color="#977C00">+++说明：+++</font>+++java.net.URLDecoder 中的方法decode(String encodeStr) 这个方法已经过时，应该使用双参数decode(String source, String encode)。接口提供方既然明确是过时接口，那么有义务同时提供新的接口；作为调用方来说，有义务去考证过时方法的新实现是什么。
+
+. 【强制】Object的equals方法容易抛空指针异常，应使用常量或确定有值的对象来调用equals。
++
++++<font color="#019858">+++正例：+++</font>+++"test".equals(object);
++
++++<font color="#FF4500">+++反例：+++</font>+++object.equals("test");
++
++++<font color="#977C00">+++说明：+++</font>+++推荐使用JDK7引入的工具类java.util.Objects#equals(Object a, Object b)
+
+. 【强制】所整型包装类对象之间+++<font color="#0033CC">+++值的比较+++</font>+++，全部使用equals方法比较。
++
++++<font color="#977C00">+++说明：+++</font>+++对于Integer var=某个数字，但在+++<font color="#0033CC">+++-128至127+++</font>+++之间的赋值，Integer对象是在IntegerCache.cache产生，会复用已有对象。虽然这个区间内的Integer值可以直接使用==进行判断，但是这个区间之外的所有数据，都会在堆上产生，并不会复用已有对象，这是一个大坑，推荐使用equals方法进行判断。
+
+
+. 【强制】在合适使用float或double的场景中，无论基本数据类型还是包装数据类型，都使用双精度浮点数即double或Double。
++
++++<font color="#977C00">+++说明：+++</font>+++一切为了精度更加高一些，一刀切规定不使用float或Float单精度浮点数。另外定义float类型还不得不在数值后边加f。
+
+. 【强】浮点数之间的等值判断，基本数据类型不能用``==``来比较，包装数据类型不能用``equals``来判断。
++
++++<font color="#977C00">+++说明：+++</font>+++浮点数采用"`尾数+阶码`"的编码方式，类似于科学计数法的"`有效数字+指数`"的表示方式。二进制无法精确表示大部分的十进制小数，具体原理参考 https://detail.tmall.com/item.htm?spm=a1z10.3-b.w4011-16861154605.57.37a81b8bGVGoJD&id=575107529181&rn=f1294dc1e36859a5098c36756bafb4a0&abbucket=18[《码出高效》]。
++
++++<font color="#FF4500">+++反例：+++</font>+++
++
+[,java]
+----
+        float a = 1.0f - 0.9f;
+        float b = 0.9f - 0.8f;
+
+        if (a == b) {
+            // 预期进入此代码块，执行其它业务逻辑
+            // 但是 a==b 的结果为false
+        }
+
+        Float x = Float.valueOf(a);
+        Float y = Float.valueOf(b);
+        if (x.equals(y)) {
+            // 预期进入此代码块，执行其它业务逻辑
+            // 但是 x.equals(y) 的结果为false
+        }
+----
++
++++<font color="#019858">+++正例：+++</font>+++
++
+(1) 指定一个误差范围，两个浮点数的差值在此范围之内，则认为是相等的
++
+[,java]
+----
+        float a = 1.0f - 0.9f;
+        float b = 0.9f - 0.8f;
+        float diff = 1e-6f;
+
+        if (Math.abs(a - b) < diff) {
+            System.out.println("true");
+        }
+----
++
+(2) 使用BigDecimal来定义值，再进行浮点数的运算操作
++
+[,java]
+----
+        BigDecimal a = new BigDecimal("1.0");
+        BigDecimal b = new BigDecimal("0.9");
+        BigDecimal c = new BigDecimal("0.8");
+
+        BigDecimal x = a.subtract(b);
+        BigDecimal y = b.subtract(c);
+
+        if (x.compareTo(y) == 0) {
+            System.out.println("true");
+        }
+----
+
+. 【强制】``BigDecimal``的等值比较应使用compareTo()方法，而不是equals()方法。
++
++++<font color="#977C00">+++说明：+++</font>+++equals()方法会比较值和精度，而compareTo()则会忽略精度。
++
+[,java]
+----
+        BigDecimal a = new BigDecimal("1");
+        BigDecimal b = new BigDecimal("1.000");
+
+        if (a.equals(b)) {
+            System.out.println("true");
+        } else {
+            // 比较精度时就返回为false
+            System.out.println("false");
+        }
+
+        if (a.compareTo(b) == 0) {
+            // 忽略精度scale，输出为true
+            System.out.println("true");
+        } else {
+            System.out.println("false");
+        }
+----
+
+. 【强制】禁止使用构造方法``BigDecimal(double)``的方式把``double值``转化为``BigDecimal对象``。
++
++++<font color="#977C00">+++说明：+++</font>+++BigDecimal(double)存在精度损失风险，在精确计算或值比较的场景中可能会导致业务逻辑异常。如：BigDecimal g = new BigDecimal(0.1f); 实际的存储值为：0.100000001490116119384765625
++
++++<font color="#019858">+++正例：+++</font>+++优先推荐入参为String的构造方法，或使用BigDecimal的valueOf方法，此方法内部其实执行了Double的toString，而Double的toString按double的实际能表达的精度对尾数行了截断。
++
+[,java]
+----
+        BigDecimal recommend1 = new BigDecimal("0.1");
+        BigDecimal recommend2 = BigDecimal.valueOf(0.1);
+----
+
+. 【强制】任何货币金额，均以+++<font color="#0033CC">+++最小货币单位+++</font>+++且整型类型来进行存储。
+. 【强制】定义数据对象DO类时，属性类型要与数据库字段类型相匹配。
++
++++<font color="#019858">+++正例：+++</font>+++数据库字段的bigint必须与类属性的Long类型相对应。
++
++++<font color="#FF4500">+++反例：+++</font>+++会员相关业务的数据库表id字段定义类型bigint unsigned，实际类对象属性为Integer，随着id越来越大，超过Integer的表示范围而溢出成为负数，此时数据库id不支持存入负数抛出异常产生P2故障。
+
+. 【强制】关于基本数据类型与包装数据类型的使用标准如下： +
+ &emsp;1） 所有的POJO类属性必须使用包装数据类型。 +
+ &emsp;2） RPC方法的返回值和参数必须使用包装数据类型。 +
+ &emsp;3） 所有的局部变量推荐使用基本数据类型。 +
++
++++<font color="#977C00">+++说明：+++</font>+++POJO类属性没有初值是提醒使用者在需要使用时，必须自己显式地进行赋值，任何NPE问题，或者入库检查，都由使用者来保证。
++
++++<font color="#019858">+++正例：+++</font>+++数据库的查询结果可能是null，因为自动拆箱，用基本数据类型接收有NPE风险。 
++
++++<font color="#FF4500">+++反例：+++</font>+++某业务的交易报表上显示成交总额涨跌情况，即正负x%，x为基本数据类型，调用的HSF服务，调用不成功时，返回的是默认值，页面显示：0%，这是不合理的，应该显示成中划线-。所以包装数据类型的null值，能够表示额外的信息，如：远程调用失败，异常退出。
+. 【强制】定义DO/DTO/VO等POJO类时，不要设定任何属性+++<font color="#0033CC">+++默认值+++</font>+++。
++
++++<font color="#FF4500">+++反例：+++</font>+++某业务的DO的gmtCreate默认值为new Date();但是这个属性在数据提取时并没有置入具体值，在更新其它字段时又附带更新了此字段，导致创建时间被修改成当前时间。
+
+. 【强制】序列化类新增属性时，请不要修改serialVersionUID字段，避免反序列失败；如果完全不兼容升级，避免反序列化混乱，那么请修改serialVersionUID值。
++
++++<font color="#977C00">+++说明：+++</font>+++注意serialVersionUID不一致会抛出序列化运行时异常。
+
+. 【强制】构造方法里面禁止加入任何业务逻辑，如果有初始化逻辑，请放在init方法中。
+. 【强制】POJO类必须写toString方法。使用工具类source> generate toString时，如果继承了另一个POJO类，注意在前面加一下super.toString。
++
++++<font color="#977C00">+++说明：+++</font>+++在方法执行抛出异常时，可以直接调用POJO的toString()方法打印其属性值，便于排查问题。
+
+. 【强制】禁止在POJO类中，同时存在对应属性xxx的isXxx()和getXxx()方法。
++
++++<font color="#977C00">+++说明：+++</font>+++框架在调用属性xxx的提取方法时，并不能确定哪个方法一定是被优先调用到，神坑之一。
+
+. 【推荐】使用索引访问用String的split方法得到的数组时，需做最后一个分隔符后有无内容的检查，否则会有抛IndexOutOfBoundsException的风险。
++
++++<font color="#977C00">+++说明：+++</font>+++
++
+[,java]
+----
+    String str = "a,b,c,,";
+    String[] ary = str.split(",");
+    // 预期大于3，结果是3
+    System.out.println(ary.length);
+----
+
+. 【推荐】当一个类有多个构造方法，或者多个同名方法，这些方法应该按顺序放置在一起，便于阅读，此规则优先于下一条。
+. 【推荐】类内方法定义顺序依次是：公有方法或保护方法 > 私有方法 > getter/setter方法。
++
++++<font color="#977C00">+++说明：+++</font>+++公有方法是类的调用者和维护者关心的方法，首屏展示最好；保护方法虽然只是子类关心，也可能是"`模板设计模式`"下的核心方法；而私有方法外部一般不需要特别关心，是一个黑盒实现；因为承载的信息价值较低，所有Service和DAO的getter/setter方法放在类体最后。
+
+. 【推荐】setter方法中，参数名称与类成员变量名称一致，this.成员名=参数名。在getter/setter方法中，尽量不要增加业务逻辑，增加排查问题难度。
++
++++<font color="#FF4500">+++反例：+++</font>+++
++
+[,java]
+----
+    public Integer getData() {
+        if (condition) {
+            return this.data + 100;
+        } else {
+            return this.data - 100;
+        }
+    }
+----
+
+. 【推荐】循环体内，字符串的联接方式，使用StringBuilder的append方法进行扩展。
++
++++<font color="#FF4500">+++反例：+++</font>+++
++
+[,java]
+----
+    String str = "start";
+    for (int i = 0; i < 100; i++) {
+        str = str + "hello";
+    }
+----
++
++++<font color="#977C00">+++说明：+++</font>+++反编译出的字节码文件显示每次循环都会new出一个StringBuilder对象，然后进行append操作，最后通过toString方法返回String对象，造成内存资源浪费。
+
+. 【推荐】final可以声明类、成员变量、方法、以及本地变量，下列情况使用final关键字： +
+&emsp;1） 不允许被继承的类，如：String类。 +
+&emsp;2） 不允许修改引用的域对象，如：POJO类的域变量。 +
+&emsp;3） 不允许被覆写的方法，如：POJO类的setter方法。 +
+&emsp;4） 不允许运行过程中重新赋值的局部变量。 +
+&emsp;5） 避免上下文重复使用一个变量，使用final描述可以强制重新定义一个变量，方便更好地进行重构。
+
+. 【推荐】慎用Object的clone方法来拷贝对象。
++
++++<font color="#977C00">+++说明：+++</font>+++对象的clone方法默认是浅拷贝，若想实现深拷贝需要覆写clone方法实现域对象的深度遍历式拷贝。
+
+. 【推荐】类成员与方法访问控制从： +
+&emsp;1） 如果不允许外部直接通过new来创建对象，那么构造方法必须是private。 +
+&emsp;2） 工具类不允许有public或default构造方法。  +
+&emsp;3） 类非static成员变量并且与子类共享，必须是protected。
+&emsp;4） 类非static成员变量并且仅在本类使用，必须是private。 +
+&emsp;5） 类static成员变量如果仅在本类使用，必须是private。   +
+&emsp;6） 若是static成员变量，必须考虑是否为final。 +
+&emsp;7） 类成员方法只供类内部调用，必须是private。 +
+&emsp;8） 类成员方法只对继承类公开，那么限制为protected。
++
++++<font color="#977C00">+++说明：+++</font>+++任何类、方法、参数、变量，严控访问范围。过于宽泛的访问范围，不利于模块解耦。思考：如果是一个private的方法，想删除就删除，可是一个public的Service方法，或者一个public的成员变量，删除一下，不得手心冒点汗吗？变量像自己的小孩，尽量在自己的视线内，变量作用域太大，无限制的到处跑，那么你会担心的。
